@@ -1,0 +1,242 @@
+__version__ = '0.0.1'
+
+import os.path
+from types import InstanceType
+import urlparse
+import urllib
+from threading import Thread
+
+import logging
+logging.basicConfig(level=logging.INFO)
+logging.getLogger('suds.client').setLevel(logging.CRITICAL)
+
+from suds.client import Client
+from onvif.digest import Security, UsernameToken, UsernameDigestToken
+from onvif.exceptions import ONVIFError
+
+# Ensure methods to raise an ONVIFError Exception
+# when some thing was wrong
+def safe_func(func):
+    def wrapped(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as err:
+            raise ONVIFError(err)
+    return wrapped
+
+class ONVIFService(object):
+    '''
+    Python Implemention for ONVIF Service.
+    Services List:
+        DeviceMgmt DeviceIO Event AnalyticsDevice Display Imaging Media
+        PTZ Receiver RemoteDiscovery Recording Replay Search Extension
+
+    >>> from onvif_cam import ONVIFService
+    >>> device_service = ONVIFService('http://192.168.0.112/onvif/device_service',
+    ...                           'admin', 'foscam',
+    ...                           '/home/linuxdev3/workspace/router/onvif/wsdl/devicemgmt.wsdl')
+    >>> ret = device_service.GetHostname()
+    >>> print ret.FromDHCP
+    >>> print ret.Name
+    >>> device_service.SetHostname(dict(Name='newhostname'))
+    >>> ret = device_service.GetSystemDateAndTime()
+    >>> print ret.DayLightSavings
+    >>> print ret.TimeZone
+    >>> dict_ret = device_service.to_dict(ret)
+    >>> print dict_ret['TimeZone']
+
+    There are two ways to pass parameter to services methods
+    1. Dict
+        params = {'Name': 'NewHostName'}
+        device_service.SetHostname(params)
+    2. Type Instance
+        params = device_service.create_type('SetHostname')
+        device_service.SetHostname(params)
+
+        time_params = device_service.create_type('SetSystemDateAndTime')
+        time_params.DateTimeType = 'Manual'
+        time_params.DaylightSavings = True
+        time_params.TimeZone = 'CST-8:00:00'
+        time_params.UTCDateTime.Date.Year = 2014
+        time_params.UTCDateTime.Date.Month = 12
+        time_params.UTCDateTime.Date.Day = 3
+        time_params.UTCDateTime.Time.Hour = 9
+        time_params.UTCDateTime.Time.Minute = 36
+        time_params.UTCDateTime.Time.Second = 11
+        device_service.SetSystemDateAndTime(time_params)
+    '''
+
+    @safe_func
+    def __init__(self, xaddr, user, passwd, url,
+                 cache_location=None, cache_duration=None,
+                 encrypt=False, daemon=False):
+
+        if not os.path.isfile(url):
+            raise ONVIFError('%s doesn`t exist!' % url)
+
+        # Convert pathname to url
+        self.url = urlparse.urljoin('file:', urllib.pathname2url(url))
+        self.xaddr = xaddr
+        # Create soap client
+        self.ws_client = Client(url=self.url, location=self.xaddr)
+
+        # Set cache duration and location
+        if cache_duration is not None:
+            self.ws_client.options.cache.setduration(days=cache_duration)
+        if cache_location is not None:
+            self.ws_client.options.cache.setlocation(cache_location)
+
+        # Set soap header for authentication
+        self.user = user
+        self.passwd = passwd
+        # Indicate wether password digest is needed
+        self.encrypt = encrypt
+
+        self.daemon = daemon
+
+        self.set_wsse()
+
+        # Method to create type instance of service method defined in WSDL
+        self.create_type = self.ws_client.factory.create
+
+    @safe_func
+    def set_wsse(self):
+        ''' Basic ws-security auth '''
+        security = Security()
+
+        if self.encrypt:
+            token = UsernameDigestToken(self.user, self.passwd)
+        else:
+            token = UsernameToken(self.user, self.passwd)
+            token.setnonce()
+            token.setcreated()
+
+        security.tokens.append(token)
+        self.ws_client.set_options(wsse=security)
+
+    @staticmethod
+    @safe_func
+    def to_dict(sudsobject):
+        # Convert a WSDL Type instance into a dictionary
+        return Client.dict(sudsobject)
+
+    def service_wrapper(self, func):
+        @safe_func
+        def wrapped(params=None, callback=None):
+            def call(params=None, callback=None):
+                # No params
+                if params is None:
+                    params = {}
+                elif isinstance(params, InstanceType):
+                    params = ONVIFService.to_dict(params)
+                ret = func(**params)
+                if callable(callback):
+                    callback(ret)
+                return ret
+
+            if self.daemon:
+                th = Thread(target=call, args=(params, callback))
+                th.daemon = True
+                th.start()
+            else:
+                return call(params, callback)
+        return wrapped
+
+
+    def __getattr__(self, name):
+        '''
+        Call the real onvif Service operations,
+        See the offical wsdl definition for the
+        APIs detail(API name, request parameters,
+        response parameters, parameter types, etc...)
+        '''
+        builtin =  name.startswith('__') and name.endswith('__')
+        if builtin:
+            return self.__dict__[name]
+        else:
+            return self.service_wrapper(getattr(self.ws_client.service, name))
+
+class ONVIFCamera(object):
+    '''
+    Python Implemention ONVIF compliant device
+    This class integrates onvif services
+
+    >>> from onvif_cam import ONVIFCamera
+    >>> mycam = ONVIFCamera('192.168.0.112', '80', 'admin',
+    ...                 'foscam', '/home/linuxdev3/workspace/router/onvif/wsdl/')
+    >>> mycam.device.GetServices(False)
+    >>> media_service = mycam.create_media_service()
+    >>> ptz_service = mycam.create_ptz_service()
+    # Get PTZ Configuration:
+    >>> mycam.ptz.GetConfiguration()
+    # Another way:
+    >>> ptz_service.GetConfiguration()
+    '''
+    def __init__(self, host, port ,user, passwd, wsdl_dir,
+                 cache_location=None, cache_duration=None,
+                 encrypt=False, daemon=False):
+        self.host = host
+        self.port = port
+        self.user = user
+        self.passwd = passwd
+        self.wsdl_dir = wsdl_dir
+        self.cache_location = cache_location
+        self.cache_duration = cache_duration
+        self.encrypt = encrypt
+        self.daemon = daemon
+
+        # Active service client container
+        self.services = { }
+
+        # Establish device service first
+        self.device  = self.create_device_service()
+
+        # Get Capabilities for service creatation
+        self.capabilities = self.device.GetCapabilities()
+
+        self.to_dict = ONVIFService.to_dict
+
+
+    def create_onvif_service(self, wsdl, xaddr):
+        '''Create ONVIF service client'''
+        wsdl_file = os.path.join(self.wsdl_dir, wsdl)
+        return ONVIFService(xaddr, self.user, self.passwd, wsdl_file,
+                            self.cache_location, self.cache_duration,
+                            self.encrypt, self.daemon)
+
+    def create_device_service(self):
+        # The entry point for device management service is fixed to:
+        xaddr = 'http://%s:%s/onvif/device_service' % (self.host, self.port)
+        self.device = self.create_onvif_service('devicemgmt.wsdl', xaddr)
+        self.services['Device'] = self.device
+        return self.device
+
+    def create_media_service(self):
+        xaddr = self.capabilities.Media.XAddr
+        self.media = self.create_onvif_service('media.wsdl', xaddr)
+        self.services['Media'] = self.media
+        return self.media
+
+    def create_ptz_service(self):
+        xaddr = self.capabilities.PTZ.XAddr
+        self.ptz = self.create_onvif_service('ptz.wsdl', xaddr)
+        self.services['PTZ'] = self.ptz
+        return self.ptz
+
+    def create_imaging_service(self):
+        xaddr = self.capabilities.Imaging.XAddr
+        self.imaging = self.create_onvif_service('imaging.wsdl', xaddr)
+        self.services['Imaging'] = self.imaging
+        return self.imaging
+
+    def create_event_service(self):
+        xaddr = self.capabilities.Events.XAddr
+        self.events = self.create_onvif_service('events.wsdl', xaddr)
+        self.services['Events'] = self.events
+        return self.events
+
+    def create_analytics_service(self):
+        xaddr = self.capabilities.Analytics.XAddr
+        self.analytics = self.create_onvif_service('analytics.wsdl', xaddr)
+        self.services['Analytics'] = self.analytics
+        return self.analytics
