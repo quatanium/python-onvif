@@ -31,7 +31,7 @@ class ONVIFService(object):
         DeviceMgmt DeviceIO Event AnalyticsDevice Display Imaging Media
         PTZ Receiver RemoteDiscovery Recording Replay Search Extension
 
-    >>> from onvif_cam import ONVIFService
+    >>> from onvif import ONVIFService
     >>> device_service = ONVIFService('http://192.168.0.112/onvif/device_service',
     ...                           'admin', 'foscam',
     ...                           '/home/linuxdev3/workspace/router/onvif/wsdl/devicemgmt.wsdl')
@@ -69,7 +69,7 @@ class ONVIFService(object):
     @safe_func
     def __init__(self, xaddr, user, passwd, url,
                  cache_location=None, cache_duration=None,
-                 encrypt=False, daemon=False):
+                 encrypt=False, daemon=False, ws_client=None):
 
         if not os.path.isfile(url):
             raise ONVIFError('%s doesn`t exist!' % url)
@@ -78,7 +78,11 @@ class ONVIFService(object):
         self.url = urlparse.urljoin('file:', urllib.pathname2url(url))
         self.xaddr = xaddr
         # Create soap client
-        self.ws_client = Client(url=self.url, location=self.xaddr)
+        if not ws_client:
+            self.ws_client = Client(url=self.url, location=self.xaddr)
+        else:
+            self.ws_client = ws_client
+            self.ws_client.set_options(location=self.xaddr)
 
         # Set cache duration and location
         if cache_duration is not None:
@@ -114,10 +118,24 @@ class ONVIFService(object):
         security.tokens.append(token)
         self.ws_client.set_options(wsse=security)
 
+    @classmethod
+    @safe_func
+    def clone(cls, service, *args, **kwargs):
+        clone_service = service.ws_client.clone()
+        kwargs['ws_client'] = clone_service
+        return ONVIFService(*args, **kwargs)
+
     @staticmethod
     @safe_func
     def to_dict(sudsobject):
         # Convert a WSDL Type instance into a dictionary
+        if sudsobject is None:
+            return { }
+        elif isinstance(sudsobject, list):
+            ret = [ ]
+            for item in sudsobject:
+                ret.append(Client.dict(item))
+            return ret
         return Client.dict(sudsobject)
 
     def service_wrapper(self, func):
@@ -161,10 +179,10 @@ class ONVIFCamera(object):
     Python Implemention ONVIF compliant device
     This class integrates onvif services
 
-    >>> from onvif_cam import ONVIFCamera
-    >>> mycam = ONVIFCamera('192.168.0.112', '80', 'admin',
+    >>> from onvif import ONVIFCamera
+    >>> mycam = ONVIFCamera('192.168.0.112', 80, 'admin',
     ...                 'foscam', '/home/linuxdev3/workspace/router/onvif/wsdl/')
-    >>> mycam.device.GetServices(False)
+    >>> mycam.devicemgmt.GetServices(False)
     >>> media_service = mycam.create_media_service()
     >>> ptz_service = mycam.create_ptz_service()
     # Get PTZ Configuration:
@@ -172,11 +190,15 @@ class ONVIFCamera(object):
     # Another way:
     >>> ptz_service.GetConfiguration()
     '''
+
+    # Class-level variables
+    services_template = {'devicemgmt': None, 'ptz': None, 'media': None,
+                         'imaging': None, 'events': None, 'analytics': None }
     def __init__(self, host, port ,user, passwd, wsdl_dir,
                  cache_location=None, cache_duration=None,
                  encrypt=False, daemon=False):
         self.host = host
-        self.port = port
+        self.port = int(port)
         self.user = user
         self.passwd = passwd
         self.wsdl_dir = wsdl_dir
@@ -188,55 +210,73 @@ class ONVIFCamera(object):
         # Active service client container
         self.services = { }
 
-        # Establish device service first
-        self.device  = self.create_device_service()
+        # Establish devicemgmt service first
+        self.devicemgmt  = self.create_devicemgmt_service()
 
         # Get Capabilities for service creatation
-        self.capabilities = self.device.GetCapabilities()
+        self.capabilities = self.devicemgmt.GetCapabilities()
 
         self.to_dict = ONVIFService.to_dict
 
 
-    def create_onvif_service(self, wsdl, xaddr):
+    def create_onvif_service(self, wsdl, xaddr, name):
         '''Create ONVIF service client'''
-        wsdl_file = os.path.join(self.wsdl_dir, wsdl)
-        return ONVIFService(xaddr, self.user, self.passwd, wsdl_file,
-                            self.cache_location, self.cache_duration,
-                            self.encrypt, self.daemon)
 
-    def create_device_service(self):
-        # The entry point for device management service is fixed to:
-        xaddr = 'http://%s:%s/onvif/device_service' % (self.host, self.port)
-        self.device = self.create_onvif_service('devicemgmt.wsdl', xaddr)
-        self.services['Device'] = self.device
-        return self.device
+        name = name.lower()
+        wsdl_file = os.path.join(self.wsdl_dir, wsdl)
+        svt = self.services_template.get(name)
+        # Has a template, clone from it. Easy and fast.
+        if svt:
+            service = ONVIFService.clone(svt, xaddr, self.user, self.passwd,
+                                         wsdl_file, self.cache_location,
+                                         self.cache_duration, self.encrypt,
+                                         self.daemon)
+        # No template, create new service from wsdl document.
+        # A little time-comsuming
+        else:
+            service = ONVIFService(xaddr, self.user, self.passwd, wsdl_file,
+                                self.cache_location, self.cache_duration,
+                                self.encrypt, self.daemon)
+
+        self.services[name] = service
+        setattr(self, name, service)
+        if not self.services_template.get(name):
+            self.services_template[name] = service
+
+        return service
+
+    def get_service(self, name):
+        service = getattr(self, name.lower(), None)
+        if not service:
+            return getattr(self, 'create_%s_service' % name.lower())()
+        return service
+
+    def create_devicemgmt_service(self):
+        # The entry point for devicemgmt service is fixed to:
+        xaddr = 'http://%s:%d/onvif/device_service' % (self.host, self.port)
+        return self.create_onvif_service('devicemgmt.wsdl', xaddr, 'devicemgmt')
 
     def create_media_service(self):
         xaddr = self.capabilities.Media.XAddr
-        self.media = self.create_onvif_service('media.wsdl', xaddr)
-        self.services['Media'] = self.media
-        return self.media
+        return self.create_onvif_service('media.wsdl', xaddr, 'media')
 
     def create_ptz_service(self):
         xaddr = self.capabilities.PTZ.XAddr
-        self.ptz = self.create_onvif_service('ptz.wsdl', xaddr)
-        self.services['PTZ'] = self.ptz
-        return self.ptz
+        return self.create_onvif_service('ptz.wsdl', xaddr, 'ptz')
 
     def create_imaging_service(self):
         xaddr = self.capabilities.Imaging.XAddr
-        self.imaging = self.create_onvif_service('imaging.wsdl', xaddr)
-        self.services['Imaging'] = self.imaging
-        return self.imaging
+        return self.create_onvif_service('imaging.wsdl', xaddr, 'imaging')
 
-    def create_event_service(self):
+    def create_events_service(self):
         xaddr = self.capabilities.Events.XAddr
-        self.events = self.create_onvif_service('events.wsdl', xaddr)
-        self.services['Events'] = self.events
-        return self.events
+        return self.create_onvif_service('events.wsdl', xaddr, 'events')
 
     def create_analytics_service(self):
         xaddr = self.capabilities.Analytics.XAddr
-        self.analytics = self.create_onvif_service('analytics.wsdl', xaddr)
-        self.services['Analytics'] = self.analytics
-        return self.analytics
+        return self.create_onvif_service('analytics.wsdl', xaddr, 'analytics')
+
+if __name__ == '__main__':
+    mycam = ONVIFCamera('192.168.0.112', 80, 'admin',
+                        'foscam', '/home/linuxdev3/workspace/python-onvif/wsdl/')
+    print mycam.devicemgmt.GetWsdlUrl()
