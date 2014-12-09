@@ -26,7 +26,7 @@ class TestDevice(unittest.TestCase):
 
     # ***************** Test Capabilities ***************************
     def test_GetWsdlUrl(self):
-        ret = self.cam.device.GetWsdlUrl()
+        ret = self.cam.devicemgmt.GetWsdlUrl()
 
     def test_GetServices(self):
         '''
@@ -34,14 +34,14 @@ class TestDevice(unittest.TestCase):
         services and possibly their available capabilities
         '''
         params = {'IncludeCapability': True }
-        ret = self.cam.device.GetServices(params)
-        params = self.cam.device.create_type('GetServices')
+        ret = self.cam.devicemgmt.GetServices(params)
+        params = self.cam.devicemgmt.create_type('GetServices')
         params.IncludeCapability=False
-        ret = self.cam.device.GetServices(params)
+        ret = self.cam.devicemgmt.GetServices(params)
 
     def test_GetServiceCapabilities(self):
         '''Returns the capabilities of the devce service.'''
-        ret = self.cam.device.GetServiceCapabilities()
+        ret = self.cam.devicemgmt.GetServiceCapabilities()
         ret.Network._IPFilter
 
     def test_GetCapabilities(self):
@@ -50,17 +50,17 @@ class TestDevice(unittest.TestCase):
         '''
         categorys = ['PTZ', 'Media', 'Imaging',
                      'Device', 'Analytics', 'Events']
-        ret = self.cam.device.GetCapabilities()
+        ret = self.cam.devicemgmt.GetCapabilities()
         for category in categorys:
-            ret = self.cam.device.GetCapabilities({'Category': category})
+            ret = self.cam.devicemgmt.GetCapabilities({'Category': category})
 
         with self.assertRaises(ONVIFError):
-            self.cam.device.GetCapabilities({'Category': 'unknown'})
+            self.cam.devicemgmt.GetCapabilities({'Category': 'unknown'})
 
     # *************** Test Network *********************************
     def test_GetHostname(self):
         ''' Get the hostname from a device '''
-        self.cam.device.GetHostname()
+        self.cam.devicemgmt.GetHostname()
 
     def test_SetHostname(self):
         '''
@@ -69,21 +69,21 @@ class TestDevice(unittest.TestCase):
         RFC 1123 section 2.1 or alternatively to RFC 952,
         other string shall be considered as invalid strings
         '''
-        pre_host_name = self.cam.device.GetHostname()
+        pre_host_name = self.cam.devicemgmt.GetHostname()
 
-        self.cam.device.SetHostname({'Name':'testHostName'})
-        self.assertEqual(self.cam.device.GetHostname().Name, 'testHostName')
+        self.cam.devicemgmt.SetHostname({'Name':'testHostName'})
+        self.assertEqual(self.cam.devicemgmt.GetHostname().Name, 'testHostName')
 
-        self.cam.device.SetHostname(pre_host_name)
+        self.cam.devicemgmt.SetHostname(pre_host_name)
 
     def test_SetHostnameFromDHCP(self):
         ''' Controls whether the hostname shall be retrieved from DHCP '''
-        ret = self.cam.device.SetHostnameFromDHCP(dict(FromDHCP=False))
+        ret = self.cam.devicemgmt.SetHostnameFromDHCP(dict(FromDHCP=False))
         self.assertTrue(isinstance(ret, bool))
 
     def test_GetDNS(self):
         ''' Gets the DNS setting from a device '''
-        ret = self.cam.device.GetDNS()
+        ret = self.cam.devicemgmt.GetDNS()
         self.assertTrue(hasattr(ret, 'FromDHCP'))
         if ret.FromDHCP == False:
             log(ret.DNSManual[0].Type)
@@ -91,28 +91,28 @@ class TestDevice(unittest.TestCase):
 
     def test_SetDNS(self):
         ''' Set the DNS settings on a device '''
-        ret = self.cam.device.SetDNS(dict(FromDHCP=False))
+        ret = self.cam.devicemgmt.SetDNS(dict(FromDHCP=False))
 
     def test_GetNTP(self):
         ''' Get the NTP settings from a device '''
-        ret = self.cam.device.GetNTP()
+        ret = self.cam.devicemgmt.GetNTP()
         if ret.FromDHCP == False:
             self.assertTrue(hasattr(ret, 'NTPManual'))
             log(ret.NTPManual)
 
     def test_SetNTP(self):
         '''Set the NTP setting'''
-        ret = self.cam.device.SetNTP(dict(FromDHCP=False))
+        ret = self.cam.devicemgmt.SetNTP(dict(FromDHCP=False))
 
     def test_GetDynamicDNS(self):
         '''Get the dynamic DNS setting'''
-        ret = self.cam.device.GetDynamicDNS()
+        ret = self.cam.devicemgmt.GetDynamicDNS()
         log(ret)
 
     def test_SetDynamicDNS(self):
         ''' Set the dynamic DNS settings on a device '''
-        ret = self.cam.device.GetDynamicDNS()
-        ret = self.cam.device.SetDynamicDNS(dict(Type=ret.Type, Name="random"))
+        ret = self.cam.devicemgmt.GetDynamicDNS()
+        ret = self.cam.devicemgmt.SetDynamicDNS(dict(Type=ret.Type, Name="random"))
 
 if __name__ == '__main__':
     unittest.main()
