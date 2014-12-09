@@ -104,8 +104,13 @@ class ONVIFService(object):
         self.create_type = self.ws_client.factory.create
 
     @safe_func
-    def set_wsse(self):
+    def set_wsse(self, user=None, passwd=None):
         ''' Basic ws-security auth '''
+        if user:
+            self.user = user
+        if passwd:
+            self.passwd = passwd
+
         security = Security()
 
         if self.encrypt:
@@ -218,6 +223,40 @@ class ONVIFCamera(object):
 
         self.to_dict = ONVIFService.to_dict
 
+
+    def update_url(self, host=None, port=None):
+        changed = False
+        if host and self.host != host:
+            changed = True
+            self.host = host
+        if port and self.port != port:
+            changed = True
+            self.port = port
+
+        if not changed:
+            return
+
+        self.devicemgmt = self.create_devicemgmt_service()
+        self.capabilities = self.devicemgmt.GetCapabilities()
+
+        for sname in self.services.keys():
+            xaddr = getattr(self.capabilities, sname.capitalize).XAddr
+            self.services[sname].ws_client.set_options(location=xaddr)
+
+    def update_auth(self, user=None, passwd=None):
+        changed = False
+        if user and user != self.user:
+            changed = True
+            self.user = user
+        if passwd and passwd != self.passwd:
+            changed = True
+            self.passwd = passwd
+
+        if not changed:
+            return
+
+        for service in self.services.keys():
+            self.services[service].set_wsse(user, passwd)
 
     def create_onvif_service(self, wsdl, xaddr, name):
         '''Create ONVIF service client'''
