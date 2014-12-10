@@ -1,16 +1,25 @@
 #!/usr/bin/python
 '''ONVIF Client Command Line Interface'''
 
-import argparse
+import re
 from cmd import Cmd
 from ast import literal_eval
-from json import loads, dumps
+from json import dumps
+from argparse import ArgumentParser, ArgumentError, REMAINDER
 
+from suds import MethodNotFound
 from suds.sax.text import Text
-from onvif import ONVIFCamera, ONVIFService, ONVIFError
+from onvif import ONVIFCamera, ONVIFService, ONVIFError, SUPPORTED_SERVICES
 
-SUPPORTED_SERVICE = ('Device', 'PTZ', 'Media')
+class ThrowingArgumentParser(ArgumentParser):
+    def error(self, message):
+        usage = self.format_usage()
+        raise ValueError("%s: %s" % (message, usage))
 
+def success(message):
+    print 'True: ' + str(message)
+def error(message):
+    print 'False: ' + str(message)
 
 class ONVIFCLI(Cmd):
     prompt = 'ONVIF >>> '
@@ -29,38 +38,76 @@ class ONVIFCLI(Cmd):
         self.create_cmd_parser()
 
     def create_cmd_parser(self):
-        cmd_parser = argparse.ArgumentParser()
+        # Create parser to parse CMD, `params` is optional.
+        cmd_parser = ThrowingArgumentParser(prog='ONVIF CMD',
+                            usage='CMD service operation [params]')
         cmd_parser.add_argument('service')
         cmd_parser.add_argument('operation')
-        cmd_parser.add_argument('params', default='{}', nargs='?')
+        cmd_parser.add_argument('params', default='{}', nargs=REMAINDER)
         self.cmd_parser = cmd_parser
 
     def do_cmd(self, line):
+        '''Usage: CMD service operation [parameters]'''
+        try:
+            args = self.cmd_parser.parse_args(line.split())
+        except ValueError as err:
+            return error(err)
 
-        args = self.cmd_parser.parse_args(line.split())
+        # Check if args.service is valid
+        if args.service not in SUPPORTED_SERVICES:
+            return error('No Service: ' + args.service)
 
-        # Get ONVIF service
-        service = self.client.get_service(args.service)
+        args.params = ''.join(args.params)
+        # params is optional
+        if not args.params.strip():
+            args.params = '{}'
 
-        # Actually execute the command and get the response
-        args.params = dict(literal_eval(args.params))
-        response = getattr(service, args.operation)(args.params)
+        # params must be a dictionary format string
+        match = re.match(r"^.*(\{.*\}).*$", args.params)
+        if not match:
+            return error('Invalid params')
+
+        try:
+            args.params = dict(literal_eval(match.group(1)))
+        except ValueError as err:
+            return error('Invalid params')
+
+        try:
+            # Get ONVIF service
+            service = self.client.get_service(args.service)
+            # Actually execute the command and get the response
+            response = getattr(service, args.operation)(args.params)
+        except MethodNotFound as err:
+            return error('No Operation: %s' % args.operation)
+        except Exception as err:
+            return error(err)
 
         if isinstance(response, Text):
-            print True, response
+            return success(response)
+        # Try to convert instance to dictionary
         try:
-            print True, ONVIFService.to_dict(response)
+            success(ONVIFService.to_dict(response))
         except ONVIFError:
-            return False, dumps({})
+            error({})
 
-    def do_EOF(self, line):
-        return 'Good Bye'
+    def complete_cmd(self, text, line, begidx, endidx):
+        # TODO: complete service operations
+        # service.ws_client.service._ServiceSelector__services[0].ports[0].methods.keys()
+        if not text:
+            completions = SUPPORTED_SERVICES[:]
+        else:
+            completions = [ key for key in SUPPORTED_SERVICES
+                                if key.startswith(text) ]
+        return completions
 
     def emptyline(self):
         return ''
 
+    def do_EOF(self, line):
+        return True
+
 def create_parser():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = ThrowingArgumentParser(description=__doc__)
     # Dealwith dependency for service, operation and params
     parser.add_argument('service', nargs='?',
                         help='Service defined by ONVIF WSDL document')
@@ -99,7 +146,7 @@ def main():
     # Also need parse configuration file.
 
     # Interactive command loop
-    cli = ONVIFCLI(INTRO)
+    cli = ONVIFCLI(stdin=input)
     cli.setup(args)
     if args.service:
         cmd = ' '.join(['cmd', args.service, args.operation, args.params])

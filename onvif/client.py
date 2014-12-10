@@ -14,6 +14,9 @@ from suds.client import Client
 from onvif.digest import Security, UsernameToken, UsernameDigestToken
 from onvif.exceptions import ONVIFError
 
+SUPPORTED_SERVICES = ('devicemgmt', 'ptz', 'media',
+                      'events', 'imaging', 'analytics')
+
 # Ensure methods to raise an ONVIFError Exception
 # when some thing was wrong
 def safe_func(func):
@@ -23,6 +26,7 @@ def safe_func(func):
         except Exception as err:
             raise ONVIFError(err)
     return wrapped
+
 
 class ONVIFService(object):
     '''
