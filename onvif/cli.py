@@ -14,7 +14,7 @@ from onvif import ONVIFCamera, ONVIFService, ONVIFError, SUPPORTED_SERVICES
 class ThrowingArgumentParser(ArgumentParser):
     def error(self, message):
         usage = self.format_usage()
-        raise ValueError("%s: %s" % (message, usage))
+        raise ValueError("%s\n%s" % (message, usage))
 
 def success(message):
     print 'True: ' + str(message)
@@ -142,7 +142,11 @@ def main():
 
     # Create argument parser
     parser = create_parser()
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    except ValueError as err:
+        print str(err)
+        return
     # Also need parse configuration file.
 
     # Interactive command loop
