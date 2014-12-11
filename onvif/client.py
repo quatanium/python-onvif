@@ -11,7 +11,8 @@ logging.basicConfig(level=logging.INFO)
 logging.getLogger('suds.client').setLevel(logging.CRITICAL)
 
 from suds.client import Client
-from onvif.digest import Security, UsernameToken, UsernameDigestToken
+from suds.wsse import Security, UsernameToken
+from suds_passworddigest import UsernameDigestToken
 from onvif.exceptions import ONVIFError
 
 SUPPORTED_SERVICES = ('devicemgmt', 'ptz', 'media',
@@ -318,8 +319,3 @@ class ONVIFCamera(object):
     def create_analytics_service(self):
         xaddr = self.capabilities.Analytics.XAddr
         return self.create_onvif_service('analytics.wsdl', xaddr, 'analytics')
-
-if __name__ == '__main__':
-    mycam = ONVIFCamera('192.168.0.112', 80, 'admin',
-                        'foscam', '/home/linuxdev3/workspace/python-onvif/wsdl/')
-    print mycam.devicemgmt.GetWsdlUrl()
