@@ -74,7 +74,7 @@ class ONVIFService(object):
     @safe_func
     def __init__(self, xaddr, user, passwd, url,
                  cache_location=None, cache_duration=None,
-                 encrypt=False, daemon=False, ws_client=None):
+                 encrypt=True, daemon=False, ws_client=None):
 
         if not os.path.isfile(url):
             raise ONVIFError('%s doesn`t exist!' % url)
