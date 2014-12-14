@@ -56,19 +56,8 @@ class ONVIFService(object):
         device_service.SetHostname(params)
     2. Type Instance
         params = device_service.create_type('SetHostname')
+        params.Hostname = 'NewHostName'
         device_service.SetHostname(params)
-
-        time_params = device_service.create_type('SetSystemDateAndTime')
-        time_params.DateTimeType = 'Manual'
-        time_params.DaylightSavings = True
-        time_params.TimeZone = 'CST-8:00:00'
-        time_params.UTCDateTime.Date.Year = 2014
-        time_params.UTCDateTime.Date.Month = 12
-        time_params.UTCDateTime.Date.Day = 3
-        time_params.UTCDateTime.Time.Hour = 9
-        time_params.UTCDateTime.Time.Minute = 36
-        time_params.UTCDateTime.Time.Second = 11
-        device_service.SetSystemDateAndTime(time_params)
     '''
 
     @safe_func
@@ -206,7 +195,7 @@ class ONVIFCamera(object):
                          'imaging': None, 'events': None, 'analytics': None }
     def __init__(self, host, port ,user, passwd, wsdl_dir,
                  cache_location=None, cache_duration=None,
-                 encrypt=False, daemon=False):
+                 encrypt=True, daemon=False):
         self.host = host
         self.port = int(port)
         self.user = user
@@ -289,9 +278,10 @@ class ONVIFCamera(object):
 
         return service
 
-    def get_service(self, name):
+    def get_service(self, name, create=True):
+        service = None
         service = getattr(self, name.lower(), None)
-        if not service:
+        if not service and create:
             return getattr(self, 'create_%s_service' % name.lower())()
         return service
 
