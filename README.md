@@ -102,6 +102,45 @@ mycam.yourservice.SomeOperation()
 
 ```
 
+## ONVIF CLI
+    python-onvif also provide command line interactive interface: onvif-cli.
+onvif-cli will be installed automatically.
+1. single command example:
+
+```Bash
+$ onvif-cli devicemgmt GetHostname --user 'admin' --password '12345' --host '192.168.0.112' --port 80 --wsdl /etc/onvif/wsdl/
+Nethostname
+$ onvif-cli devicemgmt SetHostname "{'Name': 'NewerHostname'}" --user 'admin' --password '12345' --host '192.168.0.112' --port 80 --wsdl /etc/onvif/wsdl/
+```
+
+2. Interactive mode
+
+```Bash
+$ onvif-cli -u 'admin' -a '12345' --host '192.168.0.112' --port 80 --wsdl /etc/onvif/wsdl/
+ONVIF >>> cmd
+analytics   devicemgmt  events      imaging     media       ptz
+ONVIF >>> cmd devicemgmt GetWsdlUrl
+True: http://www.onvif.org/
+ONVIF >>> cmd devicemgmt SetHostname {'Name': 'NewHostname'}
+ONVIF >>> cmd devicemgmt GetHostname
+True: {'Name': 'NewHostName'}
+ONVIF >>> cmd devicemgmt SomeOperation
+False: No Operation: SomeOperation
+```
+NOTE: Completion are supported for interactive mode.
+
+3. In Batch
+
+```Bash
+$ vim batchcmds
+$ cat batchcmds
+cmd devicemgmt GetWsdlUrl
+cmd devicemgmt GetServices {'Include': False}
+cmd devicemgmt SetHostname {'Name': 'NewHostname', 'FromDHCP': True}
+$ onvif-cli --host 192.168.0.112 --u admin -a 12345 -e -w /etc/onvif/wsdl/ < batchcmds
+# result in order...
+```
+
 ## Reference
 [1]. http://www.onvif.com "ONVIF offical website"
 [2]. http://www.onvif.org/onvif/ver20/util/operationIndex.html "Operations Index"
