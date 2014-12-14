@@ -16,7 +16,7 @@ You should clone this repository and run the setup.py.
 cd python-onvif && python setup.py
 ```
 
-### From pypi(TODO)
+### From pypi
 
 ```Bash
 sudo pip install onvif
