@@ -39,7 +39,7 @@ class ONVIFService(object):
     >>> from onvif import ONVIFService
     >>> device_service = ONVIFService('http://192.168.0.112/onvif/device_service',
     ...                           'admin', 'foscam',
-    ...                           '/home/linuxdev3/workspace/router/onvif/wsdl/devicemgmt.wsdl')
+    ...                           '/etc/onvif/wsdl/devicemgmt.wsdl')
     >>> ret = device_service.GetHostname()
     >>> print ret.FromDHCP
     >>> print ret.Name

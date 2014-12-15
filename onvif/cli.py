@@ -63,7 +63,7 @@ class ONVIFCLI(Cmd):
             args.params = '{}'
 
         # params must be a dictionary format string
-        match = re.match(r"^.*(\{.*\}).*$", args.params)
+        match = re.match(r"^.*?(\{.*\}).*$", args.params)
         if not match:
             return error('Invalid params')
 
