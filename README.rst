@@ -3,21 +3,21 @@ python-onvif
 
 ONVIF Client Implementation in Python
 
-Dependences
+Dependencies
 ------------
 suds >= 0.4
 
 suds-passworddigest
 
-Install onvif
--------------
-**From source**
+Install python-onvif
+--------------------
+**From Source**
 
-You should clone this repository and run the setup.py::
+You should clone this repository and run setup.py::
 
     cd python-onvif && python setup.py install
 
-**From pypi**
+**From PyPI**
 
 ::
 
@@ -26,7 +26,7 @@ You should clone this repository and run the setup.py::
 Getting Started
 ---------------
 
-initialize an ONVIFCamera instance
+Initialize an ONVIFCamera instance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
@@ -34,21 +34,21 @@ initialize an ONVIFCamera instance
     from onvif import ONVIFCamera
     mycam = ONVIFCamera('192.168.0.2', 80, 'user', 'passwd', '/etc/onvif/wsdl/')
 
-Now, we get an ONVIFCamera instance. By default, a devicemgmt service is available if everything is OK.
+Now, an ONVIFCamera instance is available. By default, a devicemgmt service is also available if everything is OK.
 
-So, all of the operations defined in the WSDL document::
+So, all operations defined in the WSDL document::
 
 /etc/onvif/wsdl/devicemgmt.wsdl
 
 are available.
 
-Get infomation from your camera
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Get information from your camera
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ::
 
     # Get Hostname
     resp = mycam.devicemgmt.GetHostname()
-    print 'My camera`s hostname : ' + str(resp.Hostname)
+    print 'My camera`s hostname: ' + str(resp.Hostname)
 
     # Get system date and time
     dt = mycam.devicemgmt.GetSystemDateAndTime()
@@ -56,23 +56,22 @@ Get infomation from your camera
     year = dt.UTCDateTime.Date.Year
     hour = dt.UTCDateTime.Time.Hour
 
-Configure(Control) your camera
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Configure (Control) your camera
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To configure your camera, parameters must be passed.  There are two ways
-to pass parameter to services methods.
+To configure your camera, there are two ways to pass parameters to service methods.
 
 **Dict**
 
-This way is very simple::
+This is the simpler way::
 
     params = {'Name': 'NewHostName'}
     device_service.SetHostname(params)
 
 **Type Instance**
 
-This way is simple and also recommended. For type instance will raise an
-exception if you set an invalid(or nonexistent) parameter.
+This is the recommended way. Type instance will raise an
+exception if you set an invalid (or non-existent) parameter.
 
 ::
 
@@ -92,8 +91,8 @@ exception if you set an invalid(or nonexistent) parameter.
     time_params.UTCDateTime.Time.Second = 11
     mycam.devicemgmt.SetSystemDateAndTime(time_params)
 
-Create other service
-~~~~~~~~~~~~~~~~~~~~
+Use other services
+~~~~~~~~~~~~~~~~~~
 ONVIF protocol has defined many services.
 You can find all the services and operations `here <http://www.onvif.org/onvif/ver20/util/operationIndex.html>`_.
 ONVIFCamera has support methods to create new services::
@@ -102,23 +101,23 @@ ONVIFCamera has support methods to create new services::
     ptz_service = mycam.create_ptz_service()
     # Get ptz configuration
     mycam.ptz.GetConfiguration()
-    # Another way:
-    ptz_service.GetConfiguration()
+    # Another way
+    # ptz_service.GetConfiguration()
 
-Or create unofficial service::
+Or create an unofficial service::
 
     xaddr = 'http://192.168.0.3:8888/onvif/yourservice'
     yourservice = mycam.create_onvif_service('service.wsdl', xaddr, 'yourservice')
     yourservice.SomeOperation()
-    # Be equivalent to
-    mycam.yourservice.SomeOperation()
+    # Another way
+    # mycam.yourservice.SomeOperation()
 
 ONVIF CLI
 ---------
-python-onvif also provide command line interactive interface: onvif-cli.
-onvif-cli will be installed automatically.
+python-onvif also provides a command line interactive interface: onvif-cli.
+onvif-cli is installed automatically.
 
-single command example
+Single command example
 ~~~~~~~~~~~~~~~~~~~~~~
 
 ::
@@ -143,10 +142,10 @@ Interactive mode
     ONVIF >>> cmd devicemgmt SomeOperation
     False: No Operation: SomeOperation
 
-NOTE: Completion are supported for interactive mode.
+NOTE: Tab completion is supported for interactive mode.
 
-In Batch
-~~~~~~~~
+Batch mode
+~~~~~~~~~~
 
 ::
 
@@ -156,10 +155,10 @@ In Batch
     cmd devicemgmt GetServices {'Include': False}
     cmd devicemgmt SetHostname {'Name': 'NewHostname', 'FromDHCP': True}
     $ onvif-cli --host 192.168.0.112 --u admin -a 12345 -e -w /etc/onvif/wsdl/ < batchcmds
-    # result in order...
+    # Results in order...
 
-Reference
----------
+References
+----------
 
 * `ONVIF Offical Website <http://www.onvif.com>`_
 
