@@ -13,7 +13,7 @@ suds-passworddigest
 You should clone this repository and run the setup.py.
 
 ```Bash
-cd python-onvif && python setup.py
+cd python-onvif && python setup.py install
 ```
 
 ### From pypi
