@@ -11,7 +11,6 @@ CAM_HOST      = '192.168.0.112'
 CAM_PORT      = 80
 CAM_USER      = 'admin'
 CAM_PASS      = '12345'
-WSDL_URL      = '/home/linuxdev3/workspace/python-onvif/wsdl/'
 
 DEBUG = False
 
@@ -22,7 +21,7 @@ def log(ret):
 class TestDevice(unittest.TestCase):
 
     # Class level cam. Run this test more efficiently..
-    cam = ONVIFCamera(CAM_HOST, CAM_PORT, CAM_USER, CAM_PASS, WSDL_URL, encrypt=True)
+    cam = ONVIFCamera(CAM_HOST, CAM_PORT, CAM_USER, CAM_PASS)
 
     # ***************** Test Capabilities ***************************
     def test_GetWsdlUrl(self):

@@ -124,8 +124,9 @@ single command example
 ::
 
     $ onvif-cli devicemgmt GetHostname --user 'admin' --password '12345' --host '192.168.0.112' --port 80
-    Nethostname
+    True: {'FromDHCP': True, 'Name': hision}
     $ onvif-cli devicemgmt SetHostname "{'Name': 'NewerHostname'}" --user 'admin' --password '12345' --host '192.168.0.112' --port 80
+    True: {}
 
 Interactive mode
 ~~~~~~~~~~~~~~~~
@@ -153,10 +154,12 @@ In Batch
     $ vim batchcmds
     $ cat batchcmds
     cmd devicemgmt GetWsdlUrl
-    cmd devicemgmt GetServices {'Include': False}
     cmd devicemgmt SetHostname {'Name': 'NewHostname', 'FromDHCP': True}
-    $ onvif-cli --host 192.168.0.112 --u admin -a 12345 -e -w /etc/onvif/wsdl/ < batchcmds
-    # result in order...
+    cmd devicemgmt GetHostname
+    $ onvif-cli --host 192.168.0.112 --u admin -a 12345 -w /etc/onvif/wsdl/ < batchcmds
+    ONVIF >>> True: http://www.onvif.org/
+    ONVIF >>> True: {}
+    ONVIF >>> True: {'FromDHCP': False, 'Name': NewHostname}
 
 Reference
 ---------
