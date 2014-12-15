@@ -1,6 +1,5 @@
 import os
-#from distutils.core import setup
-from setuptools import *
+from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
 version_path = os.path.join(here, 'onvif/version.txt')
@@ -27,6 +26,8 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 2.7",
 ]
 
+wsdl_files = [ 'wsdl/' + item for item in os.listdir('wsdl') ]
+
 setup(
       name='onvif',
       version=version,
@@ -43,6 +44,7 @@ setup(
       packages=find_packages(exclude=['docs', 'esamples', 'tests']),
       install_requires=requires,
       include_package_data=True,
+      data_files=[('/etc/onvif/wsdl', wsdl_files)],
       entry_points={
           'console_scripts': ['onvif-cli = onvif.cli:main']
           }
