@@ -126,7 +126,7 @@ def create_parser():
     parser.add_argument('-a', '--password', required=True,
                         help='Password for authentication')
     parser.add_argument('-w', '--wsdl',  help='directory to store ONVIF WSDL documents')
-    parser.add_argument('-e', '--encrypt', default='False'
+    parser.add_argument('-e', '--encrypt', default='False',
                         help='Encrypt password or not')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='increase output verbosity')

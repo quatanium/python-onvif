@@ -31,6 +31,7 @@ setup(
       name='onvif',
       version=version,
       description='Python Client for ONVIF Camera',
+      long_description=open('README.md', 'r').read(),
       author='Cherish Chen',
       author_email='sinchb128@gmail.com',
       maintainer='sinchb',
