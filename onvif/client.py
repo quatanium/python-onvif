@@ -12,7 +12,7 @@ logging.getLogger('suds.client').setLevel(logging.CRITICAL)
 
 from suds.client import Client
 from suds.wsse import Security, UsernameToken
-from suds_passworddigest import UsernameDigestToken
+from suds_passworddigest.token import UsernameDigestToken
 from onvif.exceptions import ONVIFError
 
 SUPPORTED_SERVICES = ('devicemgmt', 'ptz', 'media',

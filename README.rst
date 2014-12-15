@@ -29,6 +29,8 @@ Getting Started
 initialize an ONVIFCamera instance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+::
+
     from onvif import ONVIFCamera
     mycam = ONVIFCamera('192.168.0.2', 80, 'user', 'passwd', '/etc/onvif/wsdl/')
 
@@ -118,6 +120,7 @@ onvif-cli will be installed automatically.
 
 single command example
 ~~~~~~~~~~~~~~~~~~~~~~
+
 ::
 
     $ onvif-cli devicemgmt GetHostname --user 'admin' --password '12345' --host '192.168.0.112' --port 80
@@ -126,6 +129,7 @@ single command example
 
 Interactive mode
 ~~~~~~~~~~~~~~~~
+
 ::
 
     $ onvif-cli -u 'admin' -a '12345' --host '192.168.0.112' --port 80 --wsdl /etc/onvif/wsdl/
@@ -143,6 +147,7 @@ NOTE: Completion are supported for interactive mode.
 
 In Batch
 ~~~~~~~~
+
 ::
 
     $ vim batchcmds
@@ -156,7 +161,7 @@ In Batch
 Reference
 ---------
 
-* `ONVIF Offical <Website http://www.onvif.com>`_
+* `ONVIF Offical Website <http://www.onvif.com>`_
 
 * `Operations Index <http://www.onvif.org/onvif/ver20/util/operationIndex.html>`_
 
