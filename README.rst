@@ -5,9 +5,9 @@ ONVIF Client Implementation in Python
 
 Dependencies
 ------------
-suds >= 0.4
+`suds <https://pypi.python.org/pypi/suds>`_ >= 0.4
 
-suds-passworddigest
+`suds-passworddigest <https://pypi.python.org/pypi/suds_passworddigest>`_
 
 Install python-onvif
 --------------------
@@ -155,7 +155,7 @@ Batch mode
     cmd devicemgmt GetWsdlUrl
     cmd devicemgmt SetHostname {'Name': 'NewHostname', 'FromDHCP': True}
     cmd devicemgmt GetHostname
-    $ onvif-cli --host 192.168.0.112 --u admin -a 12345 -w /etc/onvif/wsdl/ < batchcmds
+    $ onvif-cli --host 192.168.0.112 -u admin -a 12345 -w /etc/onvif/wsdl/ < batchcmds
     ONVIF >>> True: http://www.onvif.org/
     ONVIF >>> True: {}
     ONVIF >>> True: {'FromDHCP': False, 'Name': NewHostname}
