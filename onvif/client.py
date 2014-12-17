@@ -179,8 +179,7 @@ class ONVIFCamera(object):
     This class integrates onvif services
 
     >>> from onvif import ONVIFCamera
-    >>> mycam = ONVIFCamera('192.168.0.112', 80, 'admin',
-    ...                 'foscam', '/home/linuxdev3/workspace/router/onvif/wsdl/')
+    >>> mycam = ONVIFCamera('192.168.0.112', 80, 'admin', '12345')
     >>> mycam.devicemgmt.GetServices(False)
     >>> media_service = mycam.create_media_service()
     >>> ptz_service = mycam.create_ptz_service()

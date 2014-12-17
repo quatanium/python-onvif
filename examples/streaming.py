@@ -28,12 +28,12 @@ def media_profile_configuration():
 
     # Setup stream configuration
     video_encoder_configuration.Encoding = 'H264'
-    # Setup resolution
+    # Setup Resolution
     video_encoder_configuration.Resolution.Width = \
                     options.H264.ResolutionsAvailable[0].Width
     video_encoder_configuration.Resolution.Height = \
                     options.H264.ResolutionsAvailable[0].Height
-    # Setup quality
+    # Setup Quality
     video_encoder_configuration.Quality = options.QualityRange.Min
     # Setup FramRate
     video_encoder_configuration.RateControl.FrameRateLimit = \

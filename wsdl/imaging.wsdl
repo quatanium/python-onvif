@@ -393,7 +393,7 @@ IN NO EVENT WILL THE CORPORATION OR ITS MEMBERS OR THEIR AFFILIATES BE LIABLE FO
 		</wsdl:operation>
 	</wsdl:binding>
     <wsdl:service name="ImagingService">
-        <wsdl:port name="ImagingPort" binding="timg:DeviceBinding">
+        <wsdl:port name="ImagingPort" binding="timg:ImagingBinding">
             <soap:address location="http://192.168.0.51:8888/onvif/Imaging"/>
         </wsdl:port>
     </wsdl:service>
