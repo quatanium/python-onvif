@@ -4,7 +4,7 @@ import os.path
 from types import InstanceType
 import urlparse
 import urllib
-from threading import Thread
+from threading import Thread, RLock
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -13,10 +13,9 @@ logging.getLogger('suds.client').setLevel(logging.CRITICAL)
 from suds.client import Client
 from suds.wsse import Security, UsernameToken
 from suds_passworddigest.token import UsernameDigestToken
-from onvif.exceptions import ONVIFError
 
-SUPPORTED_SERVICES = ('devicemgmt', 'ptz', 'media',
-                      'events', 'imaging', 'analytics')
+from onvif.exceptions import ONVIFError
+from definition import SERVICES, NSMAP
 
 # Ensure methods to raise an ONVIFError Exception
 # when some thing was wrong
@@ -62,7 +61,7 @@ class ONVIFService(object):
 
     @safe_func
     def __init__(self, xaddr, user, passwd, url,
-                 cache_location=None, cache_duration=None,
+                 cache_location='/var/cache/suds', cache_duration=None,
                  encrypt=True, daemon=False, ws_client=None):
 
         if not os.path.isfile(url):
@@ -207,15 +206,22 @@ class ONVIFCamera(object):
 
         # Active service client container
         self.services = { }
+        self.services_lock = RLock()
 
-        # Establish devicemgmt service first
-        self.devicemgmt  = self.create_devicemgmt_service()
-
-        # Get Capabilities for service creatation
-        self.capabilities = self.devicemgmt.GetCapabilities()
+        # Set xaddrs
+        self.update_xaddrs()
 
         self.to_dict = ONVIFService.to_dict
 
+    def update_xaddrs(self):
+        # Establish devicemgmt service first
+        self.devicemgmt  = self.create_devicemgmt_service()
+
+        # Get XAddr of services on the device
+        self.xaddrs = { }
+        services = self.devicemgmt.GetServices({'IncludeCapability': False})
+        for item in services:
+            self.xaddrs[item['Namespace']] = item['XAddr']
 
     def update_url(self, host=None, port=None):
         changed = False
@@ -232,9 +238,10 @@ class ONVIFCamera(object):
         self.devicemgmt = self.create_devicemgmt_service()
         self.capabilities = self.devicemgmt.GetCapabilities()
 
-        for sname in self.services.keys():
-            xaddr = getattr(self.capabilities, sname.capitalize).XAddr
-            self.services[sname].ws_client.set_options(location=xaddr)
+        with self.services_lock:
+            for sname in self.services.keys():
+                xaddr = getattr(self.capabilities, sname.capitalize).XAddr
+                self.services[sname].ws_client.set_options(location=xaddr)
 
     def update_auth(self, user=None, passwd=None):
         changed = False
@@ -248,34 +255,9 @@ class ONVIFCamera(object):
         if not changed:
             return
 
-        for service in self.services.keys():
-            self.services[service].set_wsse(user, passwd)
-
-    def create_onvif_service(self, wsdl, xaddr, name):
-        '''Create ONVIF service client'''
-
-        name = name.lower()
-        wsdl_file = os.path.join(self.wsdl_dir, wsdl)
-        svt = self.services_template.get(name)
-        # Has a template, clone from it. Easy and fast.
-        if svt:
-            service = ONVIFService.clone(svt, xaddr, self.user, self.passwd,
-                                         wsdl_file, self.cache_location,
-                                         self.cache_duration, self.encrypt,
-                                         self.daemon)
-        # No template, create new service from wsdl document.
-        # A little time-comsuming
-        else:
-            service = ONVIFService(xaddr, self.user, self.passwd, wsdl_file,
-                                self.cache_location, self.cache_duration,
-                                self.encrypt, self.daemon)
-
-        self.services[name] = service
-        setattr(self, name, service)
-        if not self.services_template.get(name):
-            self.services_template[name] = service
-
-        return service
+        with self.services_lock:
+            for service in self.services.keys():
+                self.services[service].set_wsse(user, passwd)
 
     def get_service(self, name, create=True):
         service = None
@@ -284,27 +266,89 @@ class ONVIFCamera(object):
             return getattr(self, 'create_%s_service' % name.lower())()
         return service
 
-    def create_devicemgmt_service(self):
-        # The entry point for devicemgmt service is fixed to:
-        xaddr = 'http://%s:%d/onvif/device_service' % (self.host, self.port)
-        return self.create_onvif_service('devicemgmt.wsdl', xaddr, 'devicemgmt')
+    def get_definition(self, name):
+        '''Returns xaddr and wsdl of specified service'''
+        # Check if the service is supported
+        if name not in SERVICES:
+            raise ONVIFError('Unknown service %s' % name)
+        wsdl_file = SERVICES[name]['wsdl']
+        ns = SERVICES[name]['ns']
 
-    def create_media_service(self):
-        xaddr = self.capabilities.Media.XAddr
-        return self.create_onvif_service('media.wsdl', xaddr, 'media')
+        wsdlpath = os.path.join(self.wsdl_dir, wsdl_file)
+        if not os.path.isfile(wsdlpath):
+            raise ONVIFError('No such file: %s' % wsdlpath)
 
-    def create_ptz_service(self):
-        xaddr = self.capabilities.PTZ.XAddr
-        return self.create_onvif_service('ptz.wsdl', xaddr, 'ptz')
+        # XAddr for devicemgmt is fixd:
+        if name == 'devicemgmt':
+            xaddr = 'http://%s:%s/onvif/device_service' % (self.host, self.port)
+            return xaddr, wsdlpath
 
-    def create_imaging_service(self):
-        xaddr = self.capabilities.Imaging.XAddr
-        return self.create_onvif_service('imaging.wsdl', xaddr, 'imaging')
+        # Get other XAddr
+        xaddr = self.xaddrs.get(ns)
+        if not xaddr:
+            raise ONVIFError('Device doesn`t support service: %s' % name)
 
-    def create_events_service(self):
-        xaddr = self.capabilities.Events.XAddr
-        return self.create_onvif_service('events.wsdl', xaddr, 'events')
+        return xaddr, wsdlpath
 
-    def create_analytics_service(self):
-        xaddr = self.capabilities.Analytics.XAddr
-        return self.create_onvif_service('analytics.wsdl', xaddr, 'analytics')
+    def create_onvif_service(self, name, from_template=True):
+        '''Create ONVIF service client'''
+
+        name = name.lower()
+        xaddr, wsdl_file = self.get_definition(name)
+
+        with self.services_lock:
+            svt = self.services_template.get(name)
+            # Has a template, clone from it. Faster.
+            if svt and from_template:
+                service = ONVIFService.clone(svt, xaddr, self.user,
+                                             self.passwd, wsdl_file,
+                                             self.cache_location,
+                                             self.cache_duration,
+                                             self.encrypt,
+                                             self.daemon)
+            # No template, create new service from wsdl document.
+            # A little time-comsuming
+            else:
+                service = ONVIFService(xaddr, self.user, self.passwd,
+                                       wsdl_file, self.cache_location,
+                                       self.cache_duration, self.encrypt,
+                                       self.daemon)
+
+            self.services[name] = service
+
+            setattr(self, name, service)
+            if not self.services_template.get(name):
+                self.services_template[name] = service
+
+        return service
+
+    def create_devicemgmt_service(self, from_template=True):
+        # The entry point for devicemgmt service is fixed.
+        return self.create_onvif_service('devicemgmt', from_template)
+
+    def create_media_service(self, from_template=True):
+        return self.create_onvif_service('media', from_template)
+
+    def create_ptz_service(self, from_template=True):
+        return self.create_onvif_service('ptz', from_template)
+
+    def create_imaging_service(self, from_template=True):
+        return self.create_onvif_service('imaging', from_template)
+
+    def create_deviceio_service(self, from_template=True):
+        return self.create_onvif_service('deviceio', from_template)
+
+    def create_events_service(self, from_template=True):
+        return self.create_onvif_service('events', from_template)
+
+    def create_analytics_service(self, from_template=True):
+        return self.create_onvif_service('analytics', from_template)
+
+    def create_recording_service(self, from_template=True):
+        return self.create_onvif_service('recording', from_template)
+
+    def create_search_service(self, from_template=True):
+        return self.create_onvif_service('search', from_template)
+
+    def create_replay_service(self, from_template=True):
+        return self.create_onvif_service('search', from_template)

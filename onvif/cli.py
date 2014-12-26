@@ -9,7 +9,10 @@ from argparse import ArgumentParser, ArgumentError, REMAINDER
 
 from suds import MethodNotFound
 from suds.sax.text import Text
-from onvif import ONVIFCamera, ONVIFService, ONVIFError, SUPPORTED_SERVICES
+from onvif import ONVIFCamera, ONVIFService, ONVIFError
+from definition import SERVICES
+
+SUPPORTED_SERVICES = SERVICES.keys()
 
 class ThrowingArgumentParser(ArgumentParser):
     def error(self, message):
