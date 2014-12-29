@@ -21,6 +21,7 @@ class ThrowingArgumentParser(ArgumentParser):
 
 def success(message):
     print 'True: ' + str(message)
+
 def error(message):
     print 'False: ' + str(message)
 
@@ -85,7 +86,7 @@ class ONVIFCLI(Cmd):
         except Exception as err:
             return error(err)
 
-        if isinstance(response, Text):
+        if isinstance(response, (Text, bool)):
             return success(response)
         # Try to convert instance to dictionary
         try:
