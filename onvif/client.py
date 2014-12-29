@@ -12,6 +12,7 @@ logging.getLogger('suds.client').setLevel(logging.CRITICAL)
 
 from suds.client import Client
 from suds.wsse import Security, UsernameToken
+from suds.cache import ObjectCache
 from suds_passworddigest.token import UsernameDigestToken
 
 from onvif.exceptions import ONVIFError
@@ -61,27 +62,30 @@ class ONVIFService(object):
 
     @safe_func
     def __init__(self, xaddr, user, passwd, url,
-                 cache_location='/var/cache/suds', cache_duration=None,
+                 cache_location='/tmp/suds', cache_duration=None,
                  encrypt=True, daemon=False, ws_client=None):
 
         if not os.path.isfile(url):
             raise ONVIFError('%s doesn`t exist!' % url)
+
+        # Create cache object
+        # NOTE: if cache_location is specified,
+        # onvif must has the permission to access it.
+        cache = ObjectCache(location=cache_location)
+        # cache_duration: cache will expire in `cache_duration` days
+        if cache_duration is not None:
+            cache.setduration(days=cache_duration)
 
         # Convert pathname to url
         self.url = urlparse.urljoin('file:', urllib.pathname2url(url))
         self.xaddr = xaddr
         # Create soap client
         if not ws_client:
-            self.ws_client = Client(url=self.url, location=self.xaddr)
+            self.ws_client = Client(url=self.url,
+                                    location=self.xaddr, cache=cache)
         else:
             self.ws_client = ws_client
             self.ws_client.set_options(location=self.xaddr)
-
-        # Set cache duration and location
-        if cache_duration is not None:
-            self.ws_client.options.cache.setduration(days=cache_duration)
-        if cache_location is not None:
-            self.ws_client.options.cache.setlocation(cache_location)
 
         # Set soap header for authentication
         self.user = user
