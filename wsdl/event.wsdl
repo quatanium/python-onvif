@@ -11,10 +11,10 @@ IN NO EVENT WILL THE CORPORATION OR ITS MEMBERS OR THEIR AFFILIATES BE LIABLE FO
 <wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:wsa="http://www.w3.org/2005/08/addressing" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:wsnt="http://docs.oasis-open.org/wsn/b-2" xmlns:wstop="http://docs.oasis-open.org/wsn/t-1" xmlns:wsntw="http://docs.oasis-open.org/wsn/bw-2" xmlns:tev="http://www.onvif.org/ver10/events/wsdl" xmlns:wsrf-rw="http://docs.oasis-open.org/wsrf/rw-2" xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl" targetNamespace="http://www.onvif.org/ver10/events/wsdl">
 	<wsdl:import namespace="http://docs.oasis-open.org/wsn/bw-2" location="http://docs.oasis-open.org/wsn/bw-2.wsdl"/>
 	<wsdl:types>
-		<xs:schema targetNamespace="http://www.onvif.org/ver10/events/wsdl" xmlns:wstop="http://docs.oasis-open.org/wsn/t-1" xmlns:wsnt="http://docs.oasis-open.org/wsn/b-2" elementFormDefault="qualified" version="2.3">
-            <xs:import namespace="http://www.w3.org/2005/08/addressing" schemaLocation="./ws-addr.xsd"/>
-			<xs:import namespace="http://docs.oasis-open.org/wsn/t-1" schemaLocation="./t-1.xsd"/>
-            <xs:import namespace="http://docs.oasis-open.org/wsn/b-2" schemaLocation="./b-2.xsd"/>
+		<xs:schema targetNamespace="http://www.onvif.org/ver10/events/wsdl" xmlns:wstop="http://docs.oasis-open.org/wsn/t-1" xmlns:wsnt="http://docs.oasis-open.org/wsn/b-2" elementFormDefault="qualified" version="2.4">
+			<xs:import namespace="http://www.w3.org/2005/08/addressing" schemaLocation="http://www.w3.org/2005/08/addressing/ws-addr.xsd"/>
+			<xs:import namespace="http://docs.oasis-open.org/wsn/t-1" schemaLocation="http://docs.oasis-open.org/wsn/t-1.xsd"/>
+			<xs:import namespace="http://docs.oasis-open.org/wsn/b-2" schemaLocation="http://docs.oasis-open.org/wsn/b-2.xsd"/>
 			<!--  Message Request/Responses elements  -->
 			<!--===============================-->
 			<xs:element name="GetServiceCapabilities">
@@ -243,10 +243,11 @@ IN NO EVENT WILL THE CORPORATION OR ITS MEMBERS OR THEIR AFFILIATES BE LIABLE FO
 							<xs:annotation>
 								<xs:documentation>
 						Defines the XPath function set supported for message content filtering.<br/> 
-						The following MessageContentFilterDialects are mandatory for an ONVIF compliant device:
+						The following MessageContentFilterDialects should be returned if a device supports the message content filtering:
 							<ul type="disc">
 										<li>http://www.onvif.org/ver10/tev/messageContentFilter/ItemFilter.</li>
 									</ul>
+						A device that does not support any MessageContentFilterDialect returns a single empty url.
 								</xs:documentation>
 							</xs:annotation>
 						</xs:element>
@@ -274,6 +275,17 @@ IN NO EVENT WILL THE CORPORATION OR ITS MEMBERS OR THEIR AFFILIATES BE LIABLE FO
 					</xs:sequence>
 				</xs:complexType>
 			</xs:element>
+			<!--===============================-->
+			<xs:complexType name="SubscriptionPolicy">
+				<xs:annotation><xs:documentation>Optional ONVIF defined pull point subscription policies</xs:documentation></xs:annotation>
+				<xs:sequence>
+					<xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+				</xs:sequence>
+				<xs:attribute name="ChangedOnly" type="xs:boolean">
+					<xs:annotation><xs:documentation>The pullpoint should not provide Initialized nor Deleted events for Properties.</xs:documentation></xs:annotation>
+				</xs:attribute>
+				<xs:anyAttribute processContents="lax"/>
+			</xs:complexType>
 			<!--===============================-->
 		</xs:schema>
 	</wsdl:types>
@@ -725,9 +737,4 @@ IN NO EVENT WILL THE CORPORATION OR ITS MEMBERS OR THEIR AFFILIATES BE LIABLE FO
 			</wsdl:fault>
 		</wsdl:operation>
 	</wsdl:binding>
-    <wsdl:service name="EventPortType">
-        <wsdl:port name="DevicePort" binding="tds:DeviceBinding">
-            <soap:address location="http://192.168.0.51:8888/onvif/device_service"/>
-        </wsdl:port>
-    </wsdl:service>
 </wsdl:definitions>
