@@ -9,7 +9,7 @@ def media_profile_configuration():
     '''
 
     # Create the media service
-    mycam = ONVIFCamera('192.168.0.112', 80, 'admin', '12345')
+    mycam = ONVIFCamera('192.168.1.10', 80, 'admin', 'admin')
     media_service = mycam.create_media_service()
 
     profiles = media_service.GetProfiles()
