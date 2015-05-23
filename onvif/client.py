@@ -12,9 +12,8 @@ logging.getLogger('suds.client').setLevel(logging.CRITICAL)
 
 from suds.client import Client
 from suds.wsse import Security, UsernameToken
-from suds.cache import ObjectCache
+from suds.cache import ObjectCache, NoCache
 from suds_passworddigest.token import UsernameDigestToken
-
 from onvif.exceptions import ONVIFError
 from definition import SERVICES, NSMAP
 
@@ -63,18 +62,22 @@ class ONVIFService(object):
     @safe_func
     def __init__(self, xaddr, user, passwd, url,
                  cache_location='/tmp/suds', cache_duration=None,
-                 encrypt=True, daemon=False, ws_client=None):
+                 encrypt=True, daemon=False, ws_client=None, no_cache=False):
 
         if not os.path.isfile(url):
             raise ONVIFError('%s doesn`t exist!' % url)
 
-        # Create cache object
-        # NOTE: if cache_location is specified,
-        # onvif must has the permission to access it.
-        cache = ObjectCache(location=cache_location)
-        # cache_duration: cache will expire in `cache_duration` days
-        if cache_duration is not None:
-            cache.setduration(days=cache_duration)
+        if no_cache:
+            cache = NoCache()
+        else:
+            # Create cache object
+            # NOTE: if cache_location is specified,
+            # onvif must has the permission to access it.
+            cache = ObjectCache(location=cache_location)
+            # cache_duration: cache will expire in `cache_duration` days
+            if cache_duration is not None:
+                cache.setduration(days=cache_duration)
+
 
         # Convert pathname to url
         self.url = urlparse.urljoin('file:', urllib.pathname2url(url))
@@ -197,7 +200,7 @@ class ONVIFCamera(object):
                          'imaging': None, 'events': None, 'analytics': None }
     def __init__(self, host, port ,user, passwd, wsdl_dir='/etc/onvif/wsdl/',
                  cache_location=None, cache_duration=None,
-                 encrypt=True, daemon=False):
+                 encrypt=True, daemon=False, no_cache=False):
         self.host = host
         self.port = int(port)
         self.user = user
@@ -207,6 +210,7 @@ class ONVIFCamera(object):
         self.cache_duration = cache_duration
         self.encrypt = encrypt
         self.daemon = daemon
+        self.no_cache = no_cache
 
         # Active service client container
         self.services = { }
@@ -309,14 +313,15 @@ class ONVIFCamera(object):
                                              self.cache_location,
                                              self.cache_duration,
                                              self.encrypt,
-                                             self.daemon)
+                                             self.daemon,
+                                             no_cache=self.no_cache)
             # No template, create new service from wsdl document.
             # A little time-comsuming
             else:
                 service = ONVIFService(xaddr, self.user, self.passwd,
                                        wsdl_file, self.cache_location,
                                        self.cache_duration, self.encrypt,
-                                       self.daemon)
+                                       self.daemon, no_cache=self.no_cache)
 
             self.services[name] = service
 
