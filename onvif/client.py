@@ -14,6 +14,9 @@ from suds.client import Client
 from suds.wsse import Security, UsernameToken
 from suds.cache import ObjectCache, NoCache
 from suds_passworddigest.token import UsernameDigestToken
+from suds.bindings import binding
+binding.envns = ('SOAP-ENV', 'http://www.w3.org/2003/05/soap-envelope')
+
 from onvif.exceptions import ONVIFError
 from definition import SERVICES, NSMAP
 
@@ -44,7 +47,7 @@ class ONVIFService(object):
     >>> print ret.Name
     >>> device_service.SetHostname(dict(Name='newhostname'))
     >>> ret = device_service.GetSystemDateAndTime()
-    >>> print ret.DayLightSavings
+    >>> print ret.DaylightSavings
     >>> print ret.TimeZone
     >>> dict_ret = device_service.to_dict(ret)
     >>> print dict_ret['TimeZone']
@@ -85,7 +88,9 @@ class ONVIFService(object):
         # Create soap client
         if not ws_client:
             self.ws_client = Client(url=self.url,
-                                    location=self.xaddr, cache=cache)
+                                    location=self.xaddr,
+                                    cache=cache,
+                                    headers={'Content-Type': 'application/soap+xml'})
         else:
             self.ws_client = ws_client
             self.ws_client.set_options(location=self.xaddr)
