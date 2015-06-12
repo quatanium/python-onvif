@@ -41,7 +41,7 @@ setup(
       keywords=['ONVIF', 'Camera', 'IPC'],
       url='http://github.com/quatanium/python-onvif',
       zip_safe=False,
-      packages=find_packages(exclude=['docs', 'esamples', 'tests']),
+      packages=find_packages(exclude=['docs', 'examples', 'tests']),
       install_requires=requires,
       include_package_data=True,
       data_files=[('/etc/onvif/wsdl', wsdl_files)],
