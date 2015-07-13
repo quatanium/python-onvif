@@ -7,6 +7,7 @@ import urllib
 from threading import Thread, RLock
 
 import logging
+logger = logging.getLogger('onvif')
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('suds.client').setLevel(logging.CRITICAL)
 
@@ -234,7 +235,10 @@ class ONVIFCamera(object):
         self.xaddrs = { }
         services = self.devicemgmt.GetServices({'IncludeCapability': False})
         for item in services:
-            self.xaddrs[item['Namespace']] = item['XAddr']
+            try:
+                self.xaddrs[item['Namespace']] = item['XAddr']
+            except Exception:
+                logger.exception('Unexcept service type')
 
     def update_url(self, host=None, port=None):
         changed = False
