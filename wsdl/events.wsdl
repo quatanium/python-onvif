@@ -725,8 +725,8 @@ IN NO EVENT WILL THE CORPORATION OR ITS MEMBERS OR THEIR AFFILIATES BE LIABLE FO
 			</wsdl:fault>
 		</wsdl:operation>
 	</wsdl:binding>
-    <wsdl:service name="EventPortType">
-        <wsdl:port name="DevicePort" binding="tds:DeviceBinding">
+    <wsdl:service name="EventService">
+        <wsdl:port name="EventPortType" binding="tev:EventBinding">
             <soap:address location="http://192.168.0.51:8888/onvif/device_service"/>
         </wsdl:port>
     </wsdl:service>
