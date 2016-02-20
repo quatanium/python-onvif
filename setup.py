@@ -44,7 +44,7 @@ setup(
       packages=find_packages(exclude=['docs', 'examples', 'tests']),
       install_requires=requires,
       include_package_data=True,
-      data_files=[('/etc/onvif/wsdl', wsdl_files)],
+      data_files=[('wsdl', wsdl_files)],
       entry_points={
           'console_scripts': ['onvif-cli = onvif.cli:main']
           }
