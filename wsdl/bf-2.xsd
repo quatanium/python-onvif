@@ -27,7 +27,7 @@ This document and the information contained herein is provided on an "AS IS" bas
      namespace="http://www.w3.org/2005/08/addressing" 
      schemaLocation= "./ws-addr.xsd"/>
   <xsd:import namespace="http://www.w3.org/XML/1998/namespace" 
-      schemaLocation="./addressing">
+      schemaLocation="./xml.xsd">
     <xsd:annotation>
       <xsd:documentation>
         Get access to the xml: attribute groups for xml:lang as declared on 'schema'

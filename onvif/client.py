@@ -204,7 +204,7 @@ class ONVIFCamera(object):
     # Class-level variables
     services_template = {'devicemgmt': None, 'ptz': None, 'media': None,
                          'imaging': None, 'events': None, 'analytics': None }
-    def __init__(self, host, port ,user, passwd, wsdl_dir='/etc/onvif/wsdl/',
+    def __init__(self, host, port ,user, passwd, wsdl_dir=os.path.join(os.path.dirname(os.path.dirname(__file__)), "wsdl"),
                  cache_location=None, cache_duration=None,
                  encrypt=True, daemon=False, no_cache=False):
         self.host = host

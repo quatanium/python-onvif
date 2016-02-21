@@ -11,6 +11,7 @@ from suds import MethodNotFound
 from suds.sax.text import Text
 from onvif import ONVIFCamera, ONVIFService, ONVIFError
 from definition import SERVICES
+import os.path
 
 SUPPORTED_SERVICES = SERVICES.keys()
 
@@ -129,7 +130,7 @@ def create_parser():
                         help='Username for authentication')
     parser.add_argument('-a', '--password', required=True,
                         help='Password for authentication')
-    parser.add_argument('-w', '--wsdl',  default='/etc/onvif/wsdl/',
+    parser.add_argument('-w', '--wsdl',  default=os.path.join(os.path.dirname(os.path.dirname(__file__)), "wsdl"),
                         help='directory to store ONVIF WSDL documents')
     parser.add_argument('-e', '--encrypt', default='False',
                         help='Encrypt password or not')
