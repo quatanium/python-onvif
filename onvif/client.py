@@ -66,7 +66,7 @@ class ONVIFService(object):
     @safe_func
     def __init__(self, xaddr, user, passwd, url,
                  cache_location='/tmp/suds', cache_duration=None,
-                 encrypt=True, daemon=False, ws_client=None, no_cache=False):
+                 encrypt=True, daemon=False, ws_client=None, no_cache=False, portType=None):
 
         if not os.path.isfile(url):
             raise ONVIFError('%s doesn`t exist!' % url)
@@ -91,6 +91,7 @@ class ONVIFService(object):
             self.ws_client = Client(url=self.url,
                                     location=self.xaddr,
                                     cache=cache,
+                                    port=portType,
                                     headers={'Content-Type': 'application/soap+xml'})
         else:
             self.ws_client = ws_client
@@ -240,6 +241,14 @@ class ONVIFCamera(object):
             except Exception:
                 logger.exception('Unexcept service type')
 
+        with self.services_lock:
+            try:
+                self.event = self.create_events_service()
+                self.xaddrs['http://www.onvif.org/ver10/events/wsdl/PullPointSubscription'] = self.event.CreatePullPointSubscription().SubscriptionReference.Address
+            except:
+                pass                
+
+
     def update_url(self, host=None, port=None):
         changed = False
         if host and self.host != host:
@@ -295,7 +304,7 @@ class ONVIFCamera(object):
         if not os.path.isfile(wsdlpath):
             raise ONVIFError('No such file: %s' % wsdlpath)
 
-        # XAddr for devicemgmt is fixd:
+        # XAddr for devicemgmt is fixed:
         if name == 'devicemgmt':
             xaddr = 'http://%s:%s/onvif/device_service' % (self.host, self.port)
             return xaddr, wsdlpath
@@ -307,7 +316,7 @@ class ONVIFCamera(object):
 
         return xaddr, wsdlpath
 
-    def create_onvif_service(self, name, from_template=True):
+    def create_onvif_service(self, name, from_template=True, portType=None):
         '''Create ONVIF service client'''
 
         name = name.lower()
@@ -323,14 +332,14 @@ class ONVIFCamera(object):
                                              self.cache_duration,
                                              self.encrypt,
                                              self.daemon,
-                                             no_cache=self.no_cache)
+                                             no_cache=self.no_cache, portType=portType)
             # No template, create new service from wsdl document.
             # A little time-comsuming
             else:
                 service = ONVIFService(xaddr, self.user, self.passwd,
                                        wsdl_file, self.cache_location,
                                        self.cache_duration, self.encrypt,
-                                       self.daemon, no_cache=self.no_cache)
+                                       self.daemon, no_cache=self.no_cache, portType=portType)
 
             self.services[name] = service
 
@@ -369,4 +378,7 @@ class ONVIFCamera(object):
         return self.create_onvif_service('search', from_template)
 
     def create_replay_service(self, from_template=True):
-        return self.create_onvif_service('search', from_template)
+        return self.create_onvif_service('replay', from_template)
+
+    def create_pullpoint_service(self, from_template=True):
+        return self.create_onvif_service('pullpoint', from_template, portType='PullPointSubscription')
