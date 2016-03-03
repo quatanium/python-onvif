@@ -48,7 +48,7 @@ Get information from your camera
 
     # Get Hostname
     resp = mycam.devicemgmt.GetHostname()
-    print 'My camera`s hostname: ' + str(resp.Hostname)
+    print 'My camera`s hostname: ' + str(resp.Name)
 
     # Get system date and time
     dt = mycam.devicemgmt.GetSystemDateAndTime()
