@@ -234,10 +234,12 @@ class ONVIFCamera(object):
 
         # Get XAddr of services on the device
         self.xaddrs = { }
-        services = self.devicemgmt.GetServices({'IncludeCapability': False})
-        for item in services:
+        capabilities = self.devicemgmt.GetCapabilities({'CapabilityCategory': 'All'})
+        for name, capability in capabilities:
             try:
-                self.xaddrs[item['Namespace']] = item['XAddr']
+                if name.lower() in SERVICES:
+                    ns = SERVICES[name.lower()]['ns']
+                    self.xaddrs[ns] = capability['XAddr']
             except Exception:
                 logger.exception('Unexcept service type')
 
