@@ -234,7 +234,7 @@ class ONVIFCamera(object):
 
         # Get XAddr of services on the device
         self.xaddrs = { }
-        capabilities = self.devicemgmt.GetCapabilities({'CapabilityCategory': 'All'})
+        capabilities = self.devicemgmt.GetCapabilities({'Category': 'All'})
         for name, capability in capabilities:
             try:
                 if name.lower() in SERVICES:
