@@ -205,6 +205,8 @@ class ONVIFCamera(object):
     # Class-level variables
     services_template = {'devicemgmt': None, 'ptz': None, 'media': None,
                          'imaging': None, 'events': None, 'analytics': None }
+    use_services_template = {'devicemgmt': True, 'ptz': True, 'media': True,
+                         'imaging': True, 'events': True, 'analytics': True }
     def __init__(self, host, port ,user, passwd, wsdl_dir=os.path.join(os.path.dirname(os.path.dirname(__file__)), "wsdl"),
                  cache_location=None, cache_duration=None,
                  encrypt=True, daemon=False, no_cache=False):
@@ -327,7 +329,7 @@ class ONVIFCamera(object):
         with self.services_lock:
             svt = self.services_template.get(name)
             # Has a template, clone from it. Faster.
-            if svt and from_template:
+            if svt and from_template and self.use_services_template.get(name):
                 service = ONVIFService.clone(svt, xaddr, self.user,
                                              self.passwd, wsdl_file,
                                              self.cache_location,
