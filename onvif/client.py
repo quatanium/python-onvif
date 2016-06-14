@@ -33,7 +33,7 @@ def safe_func(func):
     return wrapped
 
 
-class UsernameDigestToken_dtdiff(UsernameDigestToken):
+class UsernameDigestTokenDtDiff(UsernameDigestToken):
     '''
     UsernameDigestToken class, with a time offset parameter that can be adjusted;
     This allows authentication on cameras without being time synchronized.
@@ -143,7 +143,7 @@ class ONVIFService(object):
         security = Security()
 
         if self.encrypt:
-            token = UsernameDigestToken_dtdiff(self.user, self.passwd, dt_diff=self.dt_diff)
+            token = UsernameDigestTokenDtDiff(self.user, self.passwd, dt_diff=self.dt_diff)
         else:
             token = UsernameToken(self.user, self.passwd)
             token.setnonce()
