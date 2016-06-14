@@ -20,7 +20,8 @@ binding.envns = ('SOAP-ENV', 'http://www.w3.org/2003/05/soap-envelope')
 
 from onvif.exceptions import ONVIFError
 from definition import SERVICES, NSMAP
-
+from suds.sax.date import UTC
+import datetime as dt
 # Ensure methods to raise an ONVIFError Exception
 # when some thing was wrong
 def safe_func(func):
@@ -30,6 +31,26 @@ def safe_func(func):
         except Exception as err:
             raise ONVIFError(err)
     return wrapped
+
+
+class UsernameDigestTokenDtDiff(UsernameDigestToken):
+    '''
+    UsernameDigestToken class, with a time offset parameter that can be adjusted;
+    This allows authentication on cameras without being time synchronized.
+    Please note that using NTP on both end is the recommended solution, 
+    this should only be used in "safe" environements.
+    '''
+    def __init__(self, user, passw, dt_diff=None) :
+#        Old Style class ... sigh ...
+        UsernameDigestToken.__init__(self, user, passw)
+        self.dt_diff = dt_diff
+        
+    def setcreated(self, *args, **kwargs):
+        dt_adjusted = None
+        if self.dt_diff :
+            dt_adjusted = (self.dt_diff + dt.datetime.utcnow())
+        UsernameToken.setcreated(self, dt=dt_adjusted, *args, **kwargs)
+        self.created = str(UTC(self.created))
 
 
 class ONVIFService(object):
@@ -66,7 +87,7 @@ class ONVIFService(object):
     @safe_func
     def __init__(self, xaddr, user, passwd, url,
                  cache_location='/tmp/suds', cache_duration=None,
-                 encrypt=True, daemon=False, ws_client=None, no_cache=False, portType=None):
+                 encrypt=True, daemon=False, ws_client=None, no_cache=False, portType=None, dt_diff = None):
 
         if not os.path.isfile(url):
             raise ONVIFError('%s doesn`t exist!' % url)
@@ -105,6 +126,7 @@ class ONVIFService(object):
 
         self.daemon = daemon
 
+        self.dt_diff = dt_diff
         self.set_wsse()
 
         # Method to create type instance of service method defined in WSDL
@@ -121,7 +143,7 @@ class ONVIFService(object):
         security = Security()
 
         if self.encrypt:
-            token = UsernameDigestToken(self.user, self.passwd)
+            token = UsernameDigestTokenDtDiff(self.user, self.passwd, dt_diff=self.dt_diff)
         else:
             token = UsernameToken(self.user, self.passwd)
             token.setnonce()
@@ -190,6 +212,11 @@ class ONVIFCamera(object):
     '''
     Python Implemention ONVIF compliant device
     This class integrates onvif services
+				
+    adjust_time parameter allows authentication on cameras without being time synchronized.
+    Please note that using NTP on both end is the recommended solution, 
+    this should only be used in "safe" environements.
+    Also, this cannot be used on AXIS camera, as every request is authenticated, contrary to ONVIF standard		
 
     >>> from onvif import ONVIFCamera
     >>> mycam = ONVIFCamera('192.168.0.112', 80, 'admin', '12345')
@@ -209,7 +236,7 @@ class ONVIFCamera(object):
                          'imaging': True, 'events': True, 'analytics': True }
     def __init__(self, host, port ,user, passwd, wsdl_dir=os.path.join(os.path.dirname(os.path.dirname(__file__)), "wsdl"),
                  cache_location=None, cache_duration=None,
-                 encrypt=True, daemon=False, no_cache=False):
+                 encrypt=True, daemon=False, no_cache=False, adjust_time=False):
         self.host = host
         self.port = int(port)
         self.user = user
@@ -220,6 +247,7 @@ class ONVIFCamera(object):
         self.encrypt = encrypt
         self.daemon = daemon
         self.no_cache = no_cache
+        self.adjust_time = adjust_time
 
         # Active service client container
         self.services = { }
@@ -232,8 +260,14 @@ class ONVIFCamera(object):
 
     def update_xaddrs(self):
         # Establish devicemgmt service first
+        self.dt_diff = None
         self.devicemgmt  = self.create_devicemgmt_service()
-
+        if self.adjust_time :
+            cdate = self.devicemgmt.GetSystemDateAndTime().UTCDateTime
+            cam_date = dt.datetime(cdate.Date.Year, cdate.Date.Month, cdate.Date.Day, cdate.Time.Hour, cdate.Time.Minute, cdate.Time.Second)
+            self.dt_diff = cam_date - dt.datetime.utcnow()
+            self.devicemgmt.dt_diff = self.dt_diff
+            self.devicemgmt.set_wsse()
         # Get XAddr of services on the device
         self.xaddrs = { }
         capabilities = self.devicemgmt.GetCapabilities({'Category': 'All'})
@@ -336,14 +370,14 @@ class ONVIFCamera(object):
                                              self.cache_duration,
                                              self.encrypt,
                                              self.daemon,
-                                             no_cache=self.no_cache, portType=portType)
+                                             no_cache=self.no_cache, portType=portType, dt_diff=self.dt_diff)
             # No template, create new service from wsdl document.
             # A little time-comsuming
             else:
                 service = ONVIFService(xaddr, self.user, self.passwd,
                                        wsdl_file, self.cache_location,
                                        self.cache_duration, self.encrypt,
-                                       self.daemon, no_cache=self.no_cache, portType=portType)
+                                       self.daemon, no_cache=self.no_cache, portType=portType, dt_diff=self.dt_diff)
 
             self.services[name] = service
 
