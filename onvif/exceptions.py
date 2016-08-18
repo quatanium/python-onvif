@@ -1,8 +1,14 @@
 ''' Core exceptions raised by the ONVIF Client '''
 
 from suds import WebFault, MethodNotFound, PortNotFound, \
-        ServiceNotFound, TypeNotFound, BuildError, \
-        SoapHeadersNotPermitted
+        ServiceNotFound, TypeNotFound, BuildError
+
+# Some version dont have this
+try:
+    from suds import SoapHeadersNotPermitted
+    with_soap_exc = True
+except ImportError:
+    with_soap_exc = False
 
 # Error codes setting
 # Error unknown, e.g, HTTP errors
@@ -18,7 +24,7 @@ ERR_ONVIF_BUILD    = 4
 
 class ONVIFError(Exception):
     def __init__(self, err):
-        if isinstance(err, (WebFault, SoapHeadersNotPermitted)):
+        if isinstance(err, (WebFault, SoapHeadersNotPermitted) if with_soap_exc else WebFault):
             self.reason = err.fault.Reason.Text
             self.fault = err.fault
             self.code = ERR_ONVIF_PROTOCOL
