@@ -1,7 +1,6 @@
 __version__ = '0.0.1'
 
 import os.path
-from types import InstanceType
 import urlparse
 import urllib
 from threading import Thread, RLock
@@ -11,6 +10,7 @@ logger = logging.getLogger('onvif')
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('suds.client').setLevel(logging.CRITICAL)
 
+import suds.sudsobject
 from suds.client import Client
 from suds.wsse import Security, UsernameToken
 from suds.cache import ObjectCache, NoCache
@@ -177,9 +177,10 @@ class ONVIFService(object):
         def wrapped(params=None, callback=None):
             def call(params=None, callback=None):
                 # No params
+                # print(params.__class__.__mro__)
                 if params is None:
                     params = {}
-                elif isinstance(params, InstanceType):
+                elif isinstance(params, suds.sudsobject.Object)):
                     params = ONVIFService.to_dict(params)
                 ret = func(**params)
                 if callable(callback):
