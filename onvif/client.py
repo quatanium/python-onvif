@@ -180,7 +180,7 @@ class ONVIFService(object):
                 # print(params.__class__.__mro__)
                 if params is None:
                     params = {}
-                elif isinstance(params, suds.sudsobject.Object)):
+                elif isinstance(params, suds.sudsobject.Object):
                     params = ONVIFService.to_dict(params)
                 ret = func(**params)
                 if callable(callback):
