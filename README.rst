@@ -82,7 +82,7 @@ exception if you set an invalid (or non-existent) parameter.
     time_params = mycam.devicemgmt.create_type('SetSystemDateAndTime')
     time_params.DateTimeType = 'Manual'
     time_params.DaylightSavings = True
-    time_params.TimeZone = 'CST-8:00:00'
+    time_params.TimeZone.TZ = 'CST-8:00:00'
     time_params.UTCDateTime.Date.Year = 2014
     time_params.UTCDateTime.Date.Month = 12
     time_params.UTCDateTime.Date.Day = 3
