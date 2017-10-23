@@ -1,22 +1,20 @@
 #!/usr/bin/python
 #-*-coding=utf-8
-
+from __future__ import print_function, division
 import unittest
-
-from suds import WebFault
 
 from onvif import ONVIFCamera, ONVIFError
 
-CAM_HOST      = '192.168.0.112'
+CAM_HOST      = '172.20.9.84'
 CAM_PORT      = 80
-CAM_USER      = 'admin'
-CAM_PASS      = '12345'
+CAM_USER      = 'root'
+CAM_PASS      = 'password'
 
 DEBUG = False
 
 def log(ret):
     if DEBUG:
-        print ret
+        print(ret)
 
 class TestDevice(unittest.TestCase):
 
@@ -41,7 +39,7 @@ class TestDevice(unittest.TestCase):
     def test_GetServiceCapabilities(self):
         '''Returns the capabilities of the devce service.'''
         ret = self.cam.devicemgmt.GetServiceCapabilities()
-        ret.Network._IPFilter
+        ret.Network.IPFilter
 
     def test_GetCapabilities(self):
         '''
@@ -73,7 +71,7 @@ class TestDevice(unittest.TestCase):
         self.cam.devicemgmt.SetHostname({'Name':'testHostName'})
         self.assertEqual(self.cam.devicemgmt.GetHostname().Name, 'testHostName')
 
-        self.cam.devicemgmt.SetHostname(pre_host_name)
+        self.cam.devicemgmt.SetHostname({'Name':pre_host_name.Name})
 
     def test_SetHostnameFromDHCP(self):
         ''' Controls whether the hostname shall be retrieved from DHCP '''
@@ -84,7 +82,7 @@ class TestDevice(unittest.TestCase):
         ''' Gets the DNS setting from a device '''
         ret = self.cam.devicemgmt.GetDNS()
         self.assertTrue(hasattr(ret, 'FromDHCP'))
-        if ret.FromDHCP == False:
+        if not ret.FromDHCP and len(ret.DNSManual) > 0:
             log(ret.DNSManual[0].Type)
             log(ret.DNSManual[0].IPv4Address)
 
@@ -111,7 +109,7 @@ class TestDevice(unittest.TestCase):
     def test_SetDynamicDNS(self):
         ''' Set the dynamic DNS settings on a device '''
         ret = self.cam.devicemgmt.GetDynamicDNS()
-        ret = self.cam.devicemgmt.SetDynamicDNS(dict(Type=ret.Type, Name="random"))
+        ret = self.cam.devicemgmt.SetDynamicDNS({'Type': 'NoUpdate', 'Name':None, 'TTL':None})
 
 if __name__ == '__main__':
     unittest.main()
