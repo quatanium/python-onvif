@@ -127,7 +127,9 @@ class ONVIFService(object):
         self.daemon = daemon
 
         self.dt_diff = dt_diff
-        self.set_wsse()
+
+        if self.user is not None and self.passwd is not None:
+            self.set_wsse()
 
         # Method to create type instance of service method defined in WSDL
         self.create_type = self.ws_client.factory.create
