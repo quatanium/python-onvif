@@ -232,14 +232,13 @@ class ONVIFCamera(object):
     >>> ptz_service.GetConfiguration()
     '''
 
-    # Class-level variables
-    services_template = {'devicemgmt': None, 'ptz': None, 'media': None,
-                         'imaging': None, 'events': None, 'analytics': None }
-    use_services_template = {'devicemgmt': True, 'ptz': True, 'media': True,
-                         'imaging': True, 'events': True, 'analytics': True }
     def __init__(self, host, port ,user, passwd, wsdl_dir=os.path.join(os.path.dirname(os.path.dirname(__file__)), "wsdl"),
                  cache_location=None, cache_duration=None,
                  encrypt=True, daemon=False, no_cache=False, adjust_time=False):
+        self.services_template = {'devicemgmt': None, 'ptz': None, 'media': None,
+                         'imaging': None, 'events': None, 'analytics': None }
+        self.use_services_template = {'devicemgmt': True, 'ptz': True, 'media': True,
+                         'imaging': True, 'events': True, 'analytics': True }
         self.host = host
         self.port = int(port)
         self.user = user
