@@ -7,7 +7,7 @@ from threading import Thread, RLock
 
 import logging
 logger = logging.getLogger('onvif')
-logging.basicConfig(level=logging.INFO)
+logger.setLevel(logging.INFO)
 logging.getLogger('suds.client').setLevel(logging.CRITICAL)
 
 import suds.sudsobject
